@@ -85,7 +85,7 @@ fn main() {
         println!(" {}", path)
     }
     // Now if more than 1 path, print total
-    if parsed_args.paths.len() > 1 && total_characters > 0 {
+    if parsed_args.paths.len() > 1 && !should_word_freq {
         if should_lines {
             print!("{:>8}", total_lines);
         }
@@ -99,7 +99,6 @@ fn main() {
     }
     
     if should_word_freq {
-        println!("top 10 most frequent words:");
         let mut freq_vec: Vec<_> = words_freq.iter().collect();
         
         freq_vec.sort_by(|a, b| b.1.cmp(&a.1));
