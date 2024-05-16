@@ -142,6 +142,8 @@ mod tests {
     use crate::testing_resources::EXAMPLE_CONTENT_FIVE_WORDS;
     use crate::testing_resources::EXAMPLE_CONTENT_TEN_CHARS;
     use crate::testing_resources::EXAMPLE_CONTENT_WITH_FOUR_LINES;
+    use crate::testing_resources::WORD_FREQ_SAMPLE_TEXT_1;
+    use crate::testing_resources::WORD_FREQ_SAMPLE_TEXT_2;
 
     use super::*;
 
@@ -162,4 +164,30 @@ mod tests {
         assert_eq!(10, count_characters_in_content(EXAMPLE_CONTENT_TEN_CHARS));
         assert_eq!(0, count_characters_in_content(EXAMPLE_CONTENT_EMPTY));
     }
+
+    #[test]
+    fn test_update_word_freq() {
+        let mut freq_map: HashMap<String, i32> = HashMap::new();
+        update_word_freq(WORD_FREQ_SAMPLE_TEXT_1, &mut freq_map);
+        assert_eq!(*freq_map.get("hello").unwrap(), 3);
+        assert_eq!(*freq_map.get("world").unwrap(), 2);
+        assert_eq!(*freq_map.get("test").unwrap(), 2);
+    }
+
+    #[test]
+    fn test_print_top_words() {
+        let mut freq_map: HashMap<String, i32> = HashMap::new();
+        update_word_freq(WORD_FREQ_SAMPLE_TEXT_2, &mut freq_map);
+
+        let mut output = Vec::new();
+        let mut freq_vec: Vec<_> = freq_map.iter().collect();
+        freq_vec.sort_by(|a, b| b.1.cmp(&a.1));
+
+        for (word, &count) in freq_vec.iter().take(3) {
+            output.push(format!("{:>4} {}", count, word));
+        }
+
+        assert_eq!(output, vec!["   4 test", "   3 example", "   1 hello"]);
+    }
 }
+
