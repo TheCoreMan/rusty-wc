@@ -46,7 +46,7 @@ fn main() {
     let mut total_lines: usize = 0;
     let mut total_characters: usize = 0;
     for path in parsed_args.paths.iter() {
-        let file_contents = match fs::read_to_string(path.clone()) {
+        let file_contents = match fs::read_to_string(path) {
             Ok(x) => x,
             Err(e) => {
                 eprint!("wc: {}: {}", path, e.to_string());
