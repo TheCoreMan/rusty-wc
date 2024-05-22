@@ -1,7 +1,7 @@
 mod testing_resources;
 
 use clap::Parser;
-use std::fs;
+use std::{collections::HashMap, fs};
 
 /// wc impl in rust
 #[derive(Parser, Debug)]
@@ -19,6 +19,10 @@ struct Args {
     #[arg(short = 'w')]
     should_words: bool,
 
+    /// Print the frequency of each word in an input file, or a combination of files
+    #[arg(short = 'f')]
+    should_word_frequency: bool,
+
     /// Paths to input files we want to `wc`. If more than one input file is
     /// specified, a line of cumulative counts for all the files is displayed
     /// on a separate line after the output for the last file.
@@ -30,21 +34,28 @@ fn main() {
     let should_words: bool;
     let should_lines: bool;
     let should_characters: bool;
+    let should_word_frequency: bool;
     let mut should_exit_with_err: bool = false;
-    if !parsed_args.should_characters && !parsed_args.should_lines && !parsed_args.should_words {
+    if !parsed_args.should_characters && !parsed_args.should_lines && !parsed_args.should_words && !parsed_args.should_word_frequency {
         // Compat with wc behavior, no flags passed means all these should be on.
         should_characters = true;
         should_lines = true;
         should_words = true;
+        should_word_frequency = false;
+    } else if (parsed_args.should_characters || parsed_args.should_lines || parsed_args.should_words) && parsed_args.should_word_frequency {
+        eprintln!("wc: -f is incompatible with -c, -l, -w");
+        std::process::exit(1);
     } else {
         should_characters = parsed_args.should_characters;
         should_lines = parsed_args.should_lines;
         should_words = parsed_args.should_words;
+        should_word_frequency = parsed_args.should_word_frequency;
     }
 
     let mut total_words: usize = 0;
     let mut total_lines: usize = 0;
     let mut total_characters: usize = 0;
+    let mut total_word_frequency: HashMap<String, usize> = HashMap::new();
     for path in parsed_args.paths.iter() {
         let file_contents = match fs::read_to_string(path) {
             Ok(x) => x,
@@ -69,6 +80,13 @@ fn main() {
             total_characters += characters_in_this_content;
             print!("{:>8}", characters_in_this_content);
         }
+        if should_word_frequency {
+            let word_freq_in_this_content: HashMap<String, usize> = count_word_frequency_in_content(&file_contents);
+            for (word, freq) in word_freq_in_this_content.iter() {
+                let count = total_word_frequency.entry(word.to_string()).or_insert(0);
+                *count += freq;
+            }
+        }
         println!(" {}", path)
     }
     // Now if more than 1 path, print total
@@ -83,6 +101,17 @@ fn main() {
             print!("{:>8}", total_characters);
         }
         println!(" total")
+    }
+    if should_word_frequency {
+        let mut word_freq_vec: Vec<(&String, &usize)> = total_word_frequency.iter().collect();
+        word_freq_vec.sort_by(|a, b| b.1.cmp(a.1));
+        for i in 0..10 {
+            if i >= word_freq_vec.len() {
+                break;
+            }
+            let (word, freq) = word_freq_vec[i];
+            println!("{:>8} {}", freq, word);
+        }
     }
     if should_exit_with_err {
         std::process::exit(0x00000001);
@@ -104,6 +133,15 @@ fn count_characters_in_content(content: &str) -> usize {
 
 fn count_words_in_content(content: &str) -> usize {
     content.split_ascii_whitespace().count()
+}
+
+fn count_word_frequency_in_content(content: &str) -> HashMap<String, usize> {
+    let mut word_freq: HashMap<String, usize> = HashMap::new();
+    for word in content.split_ascii_whitespace() {
+        let count = word_freq.entry(word.to_string()).or_insert(0);
+        *count += 1;
+    }
+    word_freq
 }
 
 #[cfg(test)]
@@ -131,5 +169,27 @@ mod tests {
     fn test_count_characters_in_content() {
         assert_eq!(10, count_characters_in_content(EXAMPLE_CONTENT_TEN_CHARS));
         assert_eq!(0, count_characters_in_content(EXAMPLE_CONTENT_EMPTY));
+    }
+
+    #[test]
+    fn test_count_word_frequency_in_content(){
+        let mut word_counts: HashMap<String, usize> = HashMap::new();
+        word_counts.insert("the".to_string(), 309);
+        word_counts.insert("of".to_string(), 208);
+        word_counts.insert("to".to_string(), 174);
+        
+        let file_contents = match fs::read_to_string("LICENSE") {
+            Ok(x) => x,
+            Err(e) => {
+                eprint!("wc: {}: {}", "LICENSE", e.to_string());
+                return;
+            }
+        };
+        let mut word_frequency_in_content = count_word_frequency_in_content(&file_contents);
+
+        for (key, value) in word_counts.iter() {
+            assert_eq!(value, word_frequency_in_content.entry(key.to_string()).or_default());
+        }
+
     }
 }
