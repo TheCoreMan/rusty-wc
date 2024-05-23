@@ -6,6 +6,14 @@ line four
 ";
 
 #[cfg(test)]
+pub const EXAMPLE_FREQUENCY_CONTENT_WITH_FOUR_LINES: &str = "4 line
+1 four
+1 one
+1 three
+1 two
+";
+
+#[cfg(test)]
 pub const EXAMPLE_CONTENT_EMPTY: &str = "";
 
 #[cfg(test)]
