@@ -49,7 +49,7 @@ fn main() {
         let file_contents = match fs::read_to_string(path) {
             Ok(x) => x,
             Err(e) => {
-                eprintln!("{:>7}: '{}': {}", "wc", path, e.to_string());
+                eprintln!("wc: {}: {}", path, e.to_string());
                 should_exit_with_err = true;
                 continue;
             }
