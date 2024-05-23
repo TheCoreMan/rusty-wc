@@ -15,3 +15,11 @@ Hamilton";
 #[cfg(test)]
 pub const EXAMPLE_CONTENT_TEN_CHARS: &str = "asdf
 asdf!";
+
+#[cfg(test)]
+pub const WORD_FREQ_SAMPLE_TEXT_1: &str = "hello world hello world hello test test";
+
+#[cfg(test)]
+pub const WORD_FREQ_SAMPLE_TEXT_2: &str = "example example example test test test test hello";
+
+
