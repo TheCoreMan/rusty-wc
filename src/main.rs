@@ -1,4 +1,5 @@
 mod testing_resources;
+mod frequency;
 
 use std::collections::HashMap;
 use clap::Parser;
@@ -86,7 +87,7 @@ fn main() {
             print!("{:>8}", characters_in_this_content);
         }
         if should_words_frequency {
-            let (word_frequency_in_this_content, word_freq) = count_frequency_of_words_in_content(&file_contents);
+            let (word_frequency_in_this_content, word_freq) = frequency::count_frequency_of_words_in_content(&file_contents);
             merge_word_freq(&mut total_words_frequency, &word_freq);
             print!("{}", word_frequency_in_this_content);
         }
@@ -106,7 +107,7 @@ fn main() {
             print!("{:>8}", total_characters);
         }
         if should_words_frequency {
-            print!("{}", frequency_of_words_to_string(&total_words_frequency));
+            print!("{}", frequency::frequency_of_words_to_string(&total_words_frequency));
         }
         println!(" total")
     }
@@ -139,31 +140,9 @@ fn count_words_in_content(content: &str) -> usize {
     content.split_ascii_whitespace().count()
 }
 
-fn count_frequency_of_words_in_content(content: &str) -> (String, HashMap<String, usize>) {
-    let mut word_freq: HashMap<String, usize> = HashMap::new();
-    for word in content.split_ascii_whitespace() {
-        let count = word_freq.entry(word.into()).or_insert(0);
-        *count += 1;
-    }
-
-    (frequency_of_words_to_string(&word_freq), word_freq)
-}
-
-fn frequency_of_words_to_string(word_freq: &HashMap<String, usize>) -> String {
-    let mut sorted_word_freq = word_freq.iter().collect::<Vec<_>>();
-    sorted_word_freq.sort_by(|a, b| b.1.cmp(a.1).then(a.0.cmp(b.0)));
-    sorted_word_freq.truncate(10);
-
-    let mut res = "".to_string();
-    for (word, count) in sorted_word_freq.iter() {
-        res.push_str(&format!("{} {}\n", count, word));
-    }
-
-    res
-}
-
 #[cfg(test)]
 mod tests {
+    use crate::frequency::count_frequency_of_words_in_content;
     use crate::testing_resources::{EXAMPLE_CONTENT_EMPTY, EXAMPLE_FREQUENCY_CONTENT_WITH_FOUR_LINES};
     use crate::testing_resources::EXAMPLE_CONTENT_FIVE_WORDS;
     use crate::testing_resources::EXAMPLE_CONTENT_TEN_CHARS;
