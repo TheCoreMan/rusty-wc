@@ -49,3 +49,37 @@ fn test_wc_compatibility() {
         }
     }
 }
+
+#[test]
+// Skip if not on OSX
+#[cfg(target_os = "macos")]
+fn test_rusty_wc_frequency_feature() {
+    let frequency_license_expec_output: &str =
+        "     309 the\n     208 of\n     174 to\n     165 a\n     131 or\n     102 you\n      89 that\n      86 and\n      72 this\n      70 for\n";
+    let frequency_license_contributing_expec_output: &str =
+        "     318 the\n     208 of\n     182 to\n     168 a\n     131 or\n     104 you\n      93 that\n      88 and\n      72 this\n      70 for\n";
+
+    let rusty_wc_frequency_expec_output_strings: [&str; 2] = [
+        &frequency_license_expec_output,
+        &frequency_license_contributing_expec_output,
+    ];
+
+    let rusty_wc_frequency_test_cases: Vec<Vec<&str>> = vec![
+        vec!["-f", "LICENSE"],
+        vec!["-f", "LICENSE", "CONTRIBUTING.md"],
+    ];
+
+    for (i, rusty_wc_args) in rusty_wc_frequency_test_cases.iter().enumerate() {
+        let mut cmd = TestingCommand::cargo_bin("rusty-wc").unwrap();
+        let rusty_wc_output = cmd
+            .args(rusty_wc_args)
+            .output()
+            .expect("Failed to run rusty-wc");
+
+        if rusty_wc_output.status.success() {
+            let rusty_wc_output_string: String =
+                String::from_utf8(rusty_wc_output.stdout).expect("Output is invalid");
+            assert_eq!(rusty_wc_output_string, rusty_wc_frequency_expec_output_strings[i]);
+        }
+    }
+}
