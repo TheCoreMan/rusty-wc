@@ -2,6 +2,7 @@ mod testing_resources;
 
 use clap::Parser;
 use std::fs;
+use std::collections::HashMap;
 
 /// wc impl in rust
 #[derive(Parser, Debug)]
@@ -19,6 +20,10 @@ struct Args {
     #[arg(short = 'w')]
     should_words: bool,
 
+    /// Count frequency of words in the input files, and print the top 10 most frequent words
+    #[arg(short = 'f')]
+    should_count_frequency: bool,
+
     /// Paths to input files we want to `wc`. If more than one input file is
     /// specified, a line of cumulative counts for all the files is displayed
     /// on a separate line after the output for the last file.
@@ -30,6 +35,7 @@ fn main() {
     let should_words: bool;
     let should_lines: bool;
     let should_characters: bool;
+    let mut should_count_frequency: bool = false;
     let mut should_exit_with_err: bool = false;
     if !parsed_args.should_characters && !parsed_args.should_lines && !parsed_args.should_words {
         // Compat with wc behavior, no flags passed means all these should be on.
@@ -42,9 +48,14 @@ fn main() {
         should_words = parsed_args.should_words;
     }
 
+    if parsed_args.should_count_frequency {
+        should_count_frequency = true;
+    }
+
     let mut total_words: usize = 0;
     let mut total_lines: usize = 0;
     let mut total_characters: usize = 0;
+    let mut total_word_frequency: HashMap<String, i32> = HashMap::new();
     for path in parsed_args.paths.iter() {
         let file_contents = match fs::read_to_string(path) {
             Ok(x) => x,
@@ -69,6 +80,9 @@ fn main() {
             total_characters += characters_in_this_content;
             print!("{:>8}", characters_in_this_content);
         }
+        if should_count_frequency {
+            count_word_frequency_in_content(file_contents, &mut total_word_frequency);
+        }
         println!(" {}", path)
     }
     // Now if more than 1 path, print total
@@ -83,6 +97,15 @@ fn main() {
             print!("{:>8}", total_characters);
         }
         println!(" total")
+    }
+    if should_count_frequency {
+        let mut sorted_word_frequency: Vec<(&String, &i32)> = total_word_frequency.iter().collect();
+        sorted_word_frequency.sort_by(|a, b| b.1.cmp(a.1));
+
+        println!("Word frequency:");
+        for i in sorted_word_frequency.iter().take(10) {
+            println!("{} {}", *i.1, *i.0);
+        }
     }
     if should_exit_with_err {
         std::process::exit(0x00000001);
@@ -104,6 +127,19 @@ fn count_characters_in_content(content: &str) -> usize {
 
 fn count_words_in_content(content: &str) -> usize {
     content.split_ascii_whitespace().count()
+}
+
+fn count_word_frequency_in_content(content: String, map: &mut HashMap<String, i32>) {
+    for word in content.split_ascii_whitespace() {
+        // My initial implementation
+        // if map.contains_key(word) {
+        //     let count = map.get_mut(word).unwrap();
+        //     *count += 1;
+        // } else {
+        //     map.insert(word.to_string(), 1);
+        // }
+        *map.entry(word.to_string()).or_insert(0) += 1;
+    }
 }
 
 #[cfg(test)]
@@ -131,5 +167,15 @@ mod tests {
     fn test_count_characters_in_content() {
         assert_eq!(10, count_characters_in_content(EXAMPLE_CONTENT_TEN_CHARS));
         assert_eq!(0, count_characters_in_content(EXAMPLE_CONTENT_EMPTY));
+    }
+
+    #[test]
+    fn test_count_word_frequency_in_content() {
+        let content = "Hello World Hello Rust World";
+        let mut total_word_frequency: HashMap<String, i32> = HashMap::new();
+        count_word_frequency_in_content(content.to_string(), &mut total_word_frequency);
+        assert_eq!(Some(2), total_word_frequency.get("Hello").copied());
+        assert_eq!(Some(2), total_word_frequency.get("World").copied());
+        assert_eq!(Some(1), total_word_frequency.get("Rust").copied());
     }
 }
