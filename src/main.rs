@@ -1,6 +1,7 @@
 mod testing_resources;
 
 use clap::Parser;
+use std::collections::HashMap;
 use std::fs;
 
 /// wc impl in rust
@@ -19,6 +20,10 @@ struct Args {
     #[arg(short = 'w')]
     should_words: bool,
 
+    /// Print the number of words in each input file
+    #[arg(short = 'f', conflicts_with_all = &["should_lines", "should_characters", "should_words"])]
+    should_frequency: bool,
+
     /// Paths to input files we want to `wc`. If more than one input file is
     /// specified, a line of cumulative counts for all the files is displayed
     /// on a separate line after the output for the last file.
@@ -27,16 +32,17 @@ struct Args {
 
 fn main() {
     let parsed_args = Args::parse();
-    let should_words: bool;
-    let should_lines: bool;
-    let should_characters: bool;
+    let mut should_words: bool = true;
+    let mut should_lines: bool = true;
+    let mut should_characters: bool = true;
+    let mut should_frequency: bool = false;
     let mut should_exit_with_err: bool = false;
-    if !parsed_args.should_characters && !parsed_args.should_lines && !parsed_args.should_words {
+
+    if parsed_args.should_frequency {
+        should_frequency = true;
+    }
+    else if parsed_args.should_characters || parsed_args.should_lines || parsed_args.should_words {
         // Compat with wc behavior, no flags passed means all these should be on.
-        should_characters = true;
-        should_lines = true;
-        should_words = true;
-    } else {
         should_characters = parsed_args.should_characters;
         should_lines = parsed_args.should_lines;
         should_words = parsed_args.should_words;
@@ -45,8 +51,10 @@ fn main() {
     let mut total_words: usize = 0;
     let mut total_lines: usize = 0;
     let mut total_characters: usize = 0;
+    let mut frequency_map: HashMap<String, i32> = HashMap::new();
+
     for path in parsed_args.paths.iter() {
-        let file_contents = match fs::read_to_string(path) {
+        let file_contents = match fs::read_to_string(path.clone()) {
             Ok(x) => x,
             Err(e) => {
                 eprint!("wc: {}: {}", path, e.to_string());
@@ -54,6 +62,10 @@ fn main() {
                 continue;
             }
         };
+        if should_frequency {
+            count_frequency(&file_contents, &mut frequency_map);
+            continue;
+        }
         if should_lines {
             let lines_in_this_content = count_lines_in_content(&file_contents);
             total_lines += lines_in_this_content;
@@ -71,8 +83,17 @@ fn main() {
         }
         println!(" {}", path)
     }
-    // Now if more than 1 path, print total
-    if parsed_args.paths.len() > 1 {
+    if should_frequency {
+        let mut vec: Vec<(&String, &i32)> = frequency_map.iter().collect();
+        vec.sort_by(|a, b| b.1.cmp(a.1));
+        let mut i = if vec.len() > 10 { 10 } else { vec.len() };
+        let j = i;
+        while i != 0 {
+            println!("{} {}", vec[j - i].0, vec[j - i].1);
+            i -= 1;
+        }
+    }
+    else if parsed_args.paths.len() > 1 {
         if should_lines {
             print!("{:>8}", total_lines);
         }
@@ -104,6 +125,13 @@ fn count_characters_in_content(content: &str) -> usize {
 
 fn count_words_in_content(content: &str) -> usize {
     content.split_ascii_whitespace().count()
+}
+
+fn count_frequency(content: &str, frequency_map: &mut HashMap<String, i32>) {
+    let words = content.split_ascii_whitespace();
+    for word in words {
+        *frequency_map.entry(word.to_string()).or_insert(0) += 1;
+    }
 }
 
 #[cfg(test)]
