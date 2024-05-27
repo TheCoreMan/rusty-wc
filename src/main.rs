@@ -1,7 +1,7 @@
 mod testing_resources;
 
 use clap::Parser;
-use std::collections::HashMap;
+use indexmap::IndexMap;
 use std::fs;
 
 /// wc impl in rust
@@ -59,7 +59,7 @@ fn main() {
     let mut total_words: usize = 0;
     let mut total_lines: usize = 0;
     let mut total_characters: usize = 0;
-    let mut top_frequent_words: HashMap<String, usize> = HashMap::new();
+    let mut top_frequent_words: IndexMap<String, usize> = IndexMap::new();
 
     for path in parsed_args.paths.iter() {
         let file_contents = match fs::read_to_string(path) {
@@ -139,7 +139,7 @@ fn count_words_in_content(content: &str) -> usize {
     content.split_ascii_whitespace().count()
 }
 
-fn increment_word_frequency(word: &str, top_frequent_words: &mut HashMap<String, usize>) {
+fn increment_word_frequency(word: &str, top_frequent_words: &mut IndexMap<String, usize>) {
     match top_frequent_words.get(word) {
         Some(count) => {
             top_frequent_words.insert(word.to_string(), count + 1);
@@ -152,7 +152,7 @@ fn increment_word_frequency(word: &str, top_frequent_words: &mut HashMap<String,
 }
 
 fn sort_word_frequency_descending(
-    top_frequent_words: HashMap<String, usize>,
+    top_frequent_words: IndexMap<String, usize>,
 ) -> Vec<(String, usize)> {
     let mut top_frequent_words_sorted: Vec<(String, usize)> =
         top_frequent_words.into_iter().collect();
