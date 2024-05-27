@@ -15,3 +15,18 @@ Hamilton";
 #[cfg(test)]
 pub const EXAMPLE_CONTENT_TEN_CHARS: &str = "asdf
 asdf!";
+
+#[cfg(test)]
+pub const EXAMPLE_CONTENT_MANY_WORDS: &str = "one one one on one one two two two
+1 1
+2 2
+3 3
+4
+5 5
+6 6
+7 7
+8 8
+9 9
+10
+11
+12";
