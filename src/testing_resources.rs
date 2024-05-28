@@ -15,3 +15,11 @@ Hamilton";
 #[cfg(test)]
 pub const EXAMPLE_CONTENT_TEN_CHARS: &str = "asdf
 asdf!";
+
+
+#[cfg(test)]
+pub const EXAMPLE_CONTENT_WITH_FOUR_DISTINCT_WORDS: &str = "
+line one
+line two
+line three
+";
